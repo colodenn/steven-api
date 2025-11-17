@@ -1,4 +1,5 @@
 import type { Bot } from "mineflayer";
+import type { Entity } from "prismarine-entity";
 import mcDataImport from "minecraft-data";
 import { readdir, readFile, writeFile } from "node:fs/promises";
 import {
@@ -7,7 +8,8 @@ import {
   getPrimitiveFilePath
 } from "./constants";
 
-export const mcData = mcDataImport(process.env.MINECRAFT_VERSION!);
+const minecraftVersion = "1.19";
+export const mcData = mcDataImport(minecraftVersion);
 
 /**
  * Get the surrounding blocks of the bot.
@@ -58,6 +60,8 @@ export const getSurroundingBlocks = (
  * @returns The detailed status of the bot.
  */
 export const getDetailedStatus = (bot: Bot) => {
+  const botPosition = bot.entity.position;
+
   return {
     inventory: bot.inventory.slots
       .map((slot) =>
@@ -70,27 +74,80 @@ export const getDetailedStatus = (bot: Bot) => {
       )
       .filter((slot) => slot !== null),
     health: bot.health,
-    time: bot.time.time,
+    isDay: bot.time.isDay,
+    timeOfDay: (() => {
+      const time = bot.time.time % 24000;
+      if (time >= 0 && time < 3000) return "sunrise";
+      if (time >= 3000 && time < 9000) return "noon";
+      if (time >= 9000 && time < 15000) return "sunset";
+      return "midnight";
+    })(),
+    nearbyEntities: Object.values(bot.entities)
+      .filter((entity) => entity.id !== bot.entity.id)
+      .filter((entity) => {
+        if (!entity.position) return false;
+        const dx = entity.position.x - botPosition.x;
+        const dy = entity.position.y - botPosition.y;
+        const dz = entity.position.z - botPosition.z;
+        const distanceSquared = dx * dx + dy * dy + dz * dz;
+        return distanceSquared <= 12 * 12;
+      })
+      .map((entity) => summarizeEntity(entity)),
+    hunger: bot.food,
+    oxygen: bot.oxygenLevel,
     nearbyBlocks: {
-      chests: bot.findBlocks({
-        matching: [mcData.blocksByName.chest!.id],
+      chests: mcData?.blocksByName?.chest ? bot.findBlocks({
+        matching: [mcData.blocksByName.chest.id],
         maxDistance: 16,
         count: 100,
-      }).length,
-      craftingTables: bot.findBlocks({
-        matching: [mcData.blocksByName.crafting_table!.id],
+      }).length : 0,
+      craftingTables: mcData?.blocksByName?.crafting_table ? bot.findBlocks({
+        matching: [mcData.blocksByName.crafting_table.id],
         maxDistance: 16,
         count: 100,
-      }).length,
-      furnaces: bot.findBlocks({
-        matching: [mcData.blocksByName.furnace!.id],
+      }).length : 0,
+      furnaces: mcData?.blocksByName?.furnace ? bot.findBlocks({
+        matching: [mcData.blocksByName.furnace.id],
         maxDistance: 16,
         count: 100,
-      }).length,
+      }).length : 0,
       surroundingBlocks: getSurroundingBlocks(bot, 16, 16, 16),
     },
   };
 }
+
+type EntitySummary = {
+  id: number;
+  type: Entity["type"];
+  kind?: Entity["kind"];
+  mobType?: Entity["mobType"];
+  name?: string;
+  position?: { x: number; y: number; z: number };
+  health?: number;
+  isValid: boolean;
+};
+
+const summarizeEntity = (entity: Entity): EntitySummary => {
+  const name = entity.displayName ?? entity.username ?? entity.name;
+  const summary: EntitySummary = {
+    id: entity.id,
+    type: entity.type,
+    isValid: entity.isValid,
+  };
+
+  if (entity.kind) summary.kind = entity.kind;
+  if (name) summary.name = name;
+  if (typeof entity.health === "number") summary.health = entity.health;
+  if (entity.position) {
+    summary.position = {
+      x: Number(entity.position.x.toFixed(2)),
+      y: Number(entity.position.y.toFixed(2)),
+      z: Number(entity.position.z.toFixed(2)),
+    };
+  }
+
+  return summary;
+};
 
 /**
  * Prefill the skill library with primitives.

@@ -1,23 +1,26 @@
 import mcDataImport from "minecraft-data";
 import type { Bot } from "mineflayer";
 
-const mcData = mcDataImport("1.21.8");
+const mcData = mcDataImport("1.19");
 
-// This is helper function which cant be used directly.
+// Mine 3 cobblestone: mineBlock(bot, "stone", 3);
 export async function mineBlock(bot: Bot, name: string, count = 1) {
   const output: string[] = [];
   let _mineBlockFailCount = 0;
 
   // return if name is not string
   if (typeof name !== "string") {
-    throw new Error(`name for mineBlock must be a string`);
+    output.push(`name for mineBlock must be a string`);
+    return { success: false, output };
   }
   if (typeof count !== "number") {
-    throw new Error(`count for mineBlock must be a number`);
+    output.push(`count for mineBlock must be a number`);
+    return { success: false, output };
   }
   const blockByName = mcData.blocksByName[name];
   if (!blockByName) {
-    throw new Error(`No block named ${name}`);
+    output.push(`No block named ${name}`);
+    return { success: false, output };
   }
   const blocks = await bot.findBlocks({
     matching: [blockByName.id],
@@ -28,11 +31,12 @@ export async function mineBlock(bot: Bot, name: string, count = 1) {
     output.push(`No ${name} nearby, please explore first`);
     _mineBlockFailCount++;
     if (_mineBlockFailCount > 10) {
-      throw new Error(
+      output.push(
         "mineBlock failed too many times, make sure you explore before calling mineBlock",
       );
+      return { success: false, output };
     }
-    return output;
+    return { output, success: false };
   }
   const targets = [];
   for (let i = 0; i < Math.min(count, blocks.length); i++) {
@@ -50,5 +54,5 @@ export async function mineBlock(bot: Bot, name: string, count = 1) {
     count: count,
   });
 
-  return output;
+  return { output, success: true };
 }

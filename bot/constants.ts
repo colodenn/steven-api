@@ -36,7 +36,7 @@ export const getSkillsPath = (botId: string) =>
  * Get the primitives directory path for a specific bot
  */
 export const getPrimitivesPath = (botId: string) =>
-    join(getSkillLibraryPath(botId), PRIMITIVES_DIR);
+    join(process.cwd(), BOT_DIR, GLOBAL_PRIMITIVES_DIR);
 
 /**
  * Get the full path for a specific skill file

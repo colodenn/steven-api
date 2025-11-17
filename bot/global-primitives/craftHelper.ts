@@ -1,14 +1,15 @@
 import mcDataImport, { Block, Item } from "minecraft-data";
 import type { Bot } from "mineflayer";
 
-const mcData = mcDataImport("1.21.8");
+const mcData = mcDataImport("1.19");
 
 let output: string[] = [];
 
 export const craftHelper = (bot: Bot, name: string, item: Item, craftingTable: Block) => {
     const recipes = bot.recipesAll(item.id, null, craftingTable);
     if (!recipes.length) {
-        throw new Error(`No crafting table nearby`);
+        output.push(`No crafting table nearby`);
+        return output;
     } else {
         const recipes = bot.recipesAll(
             item.id,

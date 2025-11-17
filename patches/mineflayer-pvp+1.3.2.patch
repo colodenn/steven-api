@@ -1,0 +1,14 @@
+diff --git a/node_modules/mineflayer-pvp/lib/PVP.js b/node_modules/mineflayer-pvp/lib/PVP.js
+index 0000000..1111111 100644
+--- a/node_modules/mineflayer-pvp/lib/PVP.js
++++ b/node_modules/mineflayer-pvp/lib/PVP.js
+@@ -48,7 +48,7 @@ class PVP {
+         */
+         this.meleeAttackRate = new TimingSolver_1.MaxDamageOffset();
+         this.bot = bot;
+         this.movements = new mineflayer_pathfinder_1.Movements(bot, require('minecraft-data')(bot.version));
+-        this.bot.on('physicTick', () => this.update());
++        this.bot.on('physicsTick', () => this.update());
+         this.bot.on('entityGone', e => { if (e === this.target)
+             this.stop(); });
+     }
